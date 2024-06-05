@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import make_password
 from rest_framework.authtoken.models import Token
 
 # Create your views here.
-
+    
 @api_view([])
 def login(request):
     email = request.data.get('email')
