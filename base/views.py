@@ -2,16 +2,18 @@ from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.generics import GenericAPIView
 from.models import Product, ProductCategory ,Department, Supplier
-from.serializer import ProductSerializer,UserSerializer,  ProductCategorySerializer,DepartmentSerializer,SupplierSerializer
+from.serializer import ProductSerializer,UserSerializer, ProductCategorySerializer,DepartmentSerializer,SupplierSerializer,GroupSerializer
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from rest_framework.authtoken.models import Token
-
+from rest_framework.permissions import AllowAny,DjangoModelPermissions,IsAuthenticated
+from django.contrib.auth.models import Group
 # Create your views here.
     
-@api_view([])
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def login(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -19,19 +21,30 @@ def login(request):
     user = authenticate(username=email,password=password)
 
     if user == None:
-        return Response('invalid credential')
+        return Response('Invalid credential!')
     
     else:
         token,_=Token.objects.get_or_create(user=user)
         return Response(token.key)
+    
 
-@api_view(['post'])
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def group_listing(request):
+   objs = Group.objects.all()
+   serializer= GroupSerializer(objs,many=True)
+   return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def register(request):
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
         password = request.data.get('password')
-        hash_password = make_password(password)
-        a = serializer.save()
+        hash_password = make_password('password')
+
+        a=  serializer.save()
         a.password = hash_password
         a.save()
         return Response('User created!')
@@ -42,6 +55,8 @@ def register(request):
 class ProductApiView(ModelViewSet):
     queryset =Product.objects.all()
     serializer_class =ProductSerializer
+    permission_classes= [IsAuthenticated,DjangoModelPermissions]
+
 
 class ProductCategoryApiView(GenericAPIView):
     queryset=ProductCategory.objects.all()
